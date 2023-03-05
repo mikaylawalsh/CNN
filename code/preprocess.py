@@ -57,7 +57,7 @@ def get_data(file_path, first_class, second_class):
     inputs = tf.reshape(inputs, (-1, 3, 32, 32))
     inputs = tf.transpose(inputs, perm=[0, 2, 3, 1])
     # 3. re-number labels so cat is 0 and dog is 1 (np.where)
-    labels = np.where(labels == first_class, labels=0, labels=1)  # ?
+    labels = np.where(labels == first_class, 0, 1)
     # 4. turn labels into one hot vectors (tf.one_hot) where labels are of size (num_images, num_classes)
     labels = tf.one_hot(labels, 2)
     # 5. normalize pixel values by dividing by 255
