@@ -23,8 +23,8 @@ class Model(tf.keras.Model):
         """
         super(Model, self).__init__()
 
-        self.batch_size = None
-        self.num_classes = None
+        self.batch_size = 64  # how to decide batch_size
+        self.num_classes = 2 
         # Append losses to this list in training so you can visualize loss vs time in main
         self.loss_list = []
 
@@ -32,24 +32,44 @@ class Model(tf.keras.Model):
 
         # learning rate, kernel size, stride, batch size, epochs, padding, size of hidden layers
         # optimizer (adam), output dimensions
-        self.learning_rate = 0.01
-        self.epochs = 20
-        self.stride = 1
-        self.optimizer = tf.keras.optimizers.Adam()
-        self.padding = "SAME"  # valid or same but thats not an option
+        self.learning_rate = 0.001
+        self.epochs = 10
+        self.stride = [1, 1, 1, 1]
+        self.optimizer = tf.keras.optimizers.Adam(
+            learning_rate=self.learning_rate)
+        self.padding = "SAME"
+
+        # how many filters should i have? what size should they be?
+        self.filters1 = tf.Variable(
+            tf.random.truncated_normal(shape=[5, 5, 3, 16], stddev=.1))
+        self.filters2 = tf.Variable(
+            tf.random.truncated_normal([5, 5, 16, 20], stddev=.1))
+        self.filters3 = tf.Variable(
+            tf.random.truncated_normal([3, 3, 20, 20], stddev=.1))
 
         # TODO: Initialize all trainable parameters
-        self.weights = tf.Variable(tf.random.truncated_normal(
-            [100, self.num_classes], stddev=.1))  # shape right?
-        self.biases = tf.Variable(
-            tf.random.truncated_normal([self.num_classes], stddev=.1))
-        # how many filters should i have? what size should they be?
-        self.filters = tf.Variable(
-            tf.random.truncated_normal([5, 5, 3, 16], stddev=.1))
+        self.weights1 = tf.Variable(tf.random.truncated_normal(
+            shape=[320, 128], stddev=.1))
+        self.weights2 = tf.Variable(tf.random.truncated_normal(
+            shape=[128, 64], stddev=.1))
+        self.weights3 = tf.Variable(tf.random.truncated_normal(
+            shape=[64, 2], stddev=.1))
+
+        self.biases_conv1 = tf.Variable(
+            tf.random.truncated_normal(shape=[16], stddev=.1))
+        self.biases_conv2 = tf.Variable(
+            tf.random.truncated_normal(shape=[20], stddev=.1))
+        self.biases_conv3 = tf.Variable(
+            tf.random.truncated_normal(shape=[20], stddev=.1))
+
+        self.biases_dense1 = tf.Variable(
+            tf.random.truncated_normal(shape=[128], stddev=.1))
+        self.biases_dense2 = tf.Variable(
+            tf.random.truncated_normal(shape=[64], stddev=.1))
+        self.biases_dense3 = tf.Variable(
+            tf.random.truncated_normal(shape=[2], stddev=.1))
 
         self.flatten = tf.keras.layers.Flatten()
-
-        # weights, biases, kernel values
 
     def call(self, inputs, is_testing=False):
         """
@@ -63,26 +83,46 @@ class Model(tf.keras.Model):
         # shape of input = (num_inputs (or batch_size), in_height, in_width, in_channels)
         # shape of filter = (filter_height, filter_width, in_channels, out_channels)
         # shape of strides = (batch_stride, height_stride, width_stride, channels_stride)
+        conv1 = tf.nn.conv2d(inputs, self.filters1, [1, 2, 2, 1], self.padding)
 
-        # add more layers later..basic model
+        bias_add1 = tf.nn.bias_add(conv1, self.biases_conv1)
+        mean1, variance1 = tf.nn.moments(bias_add1, [0, 1, 2])
+        batch_norm1 = tf.nn.batch_normalization(
+            bias_add1, mean1, variance1, None, None, 1e-5)
+        relu1 = tf.nn.relu(batch_norm1)
+        max_pool1 = tf.nn.max_pool(relu1, [3, 3], [2, 2], self.padding)
 
-        if is_testing:
-            lay1 = conv2d(inputs, self.filters, self.stride, self.padding)
-        else:
-            # should stride be [1, 1, 1, 1] or 2? conflicting
-            lay1 = tf.nn.conv2d(inputs, self.filters, 2, "SAME")
+        conv2 = tf.nn.conv2d(max_pool1, self.filters2, self.stride, self.padding)
+        bias_add2 = tf.nn.bias_add(conv2, self.biases_conv2)
+        mean2, variance2 = tf.nn.moments(bias_add2, [0, 1, 2])
+        batch_norm2 = tf.nn.batch_normalization(
+            bias_add2, mean2, variance2, None, None, 1e-5)
+        relu2 = tf.nn.relu(batch_norm2)
+        max_pool2 = tf.nn.max_pool(relu2, [2, 2], [2, 2], self.padding)
+        # if is_testing:
+        #     conv3 = conv2d(max_pool2, self.filters3, self.stride, self.padding) 
+        # else:
+        conv3 = tf.nn.conv2d(max_pool2, self.filters3, self.stride, self.padding)
+        bias_add3 = tf.nn.bias_add(conv3, self.biases_conv3)
+        mean3, variance3 = tf.nn.moments(bias_add3, [0, 1, 2])
+        batch_norm3 = tf.nn.batch_normalization(
+            bias_add3, mean3, variance3, None, None, 1e-5)
+        relu3 = tf.nn.relu(batch_norm3)
 
-        # what goes here for value? correct addition?
-        lay1 += tf.nn.bias_add(lay1, self.biases)
-        mean, variance = tf.nn.moments(inputs, [0, 1, 2])  # ??
-        lay1 = tf.nn.batch_normalization(
-            lay1, mean, variance, None, None, 1e-5)  # what goes as input
-        lay2 = tf.nn.relu(lay1)  # ?
-        lay3 = tf.nn.max_pool(lay2, 3, 2, "SAME")
-        logits = tf.matmul(lay3, self.weights) + self.biases
+        flat = self.flatten(relu3)
+
+        dense1 = tf.matmul(flat, self.weights1) + self.biases_dense1
+        relu4 = tf.nn.relu(dense1)
+        drop1 = tf.nn.dropout(relu4, 0.3)
+
+        dense2 = tf.matmul(drop1, self.weights2) + \
+            self.biases_dense2
+        relu5 = tf.nn.relu(dense2)
+        drop2 = tf.nn.dropout(relu5, 0.3)
+
+        logits = tf.matmul(drop2, self.weights3) + self.biases_dense3
 
         return logits
-        # is output shape correct?
 
     def loss(self, logits, labels):
         """
@@ -95,7 +135,8 @@ class Model(tf.keras.Model):
         :return: the loss of the model as a Tensor
         """
 
-        probs = tf.nn.softmax_cross_entropy_with_logits(labels, logits)
+        probs = tf.reduce_mean(
+            tf.nn.softmax_cross_entropy_with_logits(labels, logits))
 
         return probs
 
@@ -137,32 +178,51 @@ def train(model, train_inputs, train_labels):
     # indices = []
     # for x in range(len(train_inputs)):
     #     indices.append(x)
-    indices = [x for x in range(len(train_inputs))]
-    indices = tf.random.shuffle(indices)
+    #indices = [x for x in range(len(train_inputs))]
+    indices = tf.random.shuffle(range(len(train_inputs)))
     shuffled_inputs = tf.gather(train_inputs, indices)
     shuffled_labels = tf.gather(train_labels, indices)
 
     # 2. make sure inputs are of correct size - (batch_size, width, height, in_channels)
-    # assert(shuffled_inputs.shape == (self.batch_size, ))
 
     # 3. call tf.image.random_flip_left_right to increase accuracy -- call this on all?
-    # shuffled_inputs = tf.image.random_flip_left_right(shuffled_inputs)
+    shuffled_inputs = tf.image.random_flip_left_right(shuffled_inputs)
 
     # 4. call call
     # 5. calculate loss within scope of tf.GradientTape
-    with tf.GradientTape as tape:
-        logits = model.call(shuffled_inputs, False)
-        loss = model.loss(logits, shuffled_labels)
-        model.loss_list.append(loss)
-
     # 6. use optimizer to apply gradients outside of gradient tape
-    grads = tape.gradient(loss, model.weights)
-    model.optimizer.apply_gradients(model.weights, grads)
     # 7. calculate accuracy
-    acc = model.accuracy(logits, shuffled_labels)
-
     # 8. print list of losses per batch
-    return {'loss': loss, 'acc': acc}
+
+    # for b, b1 in enumerate(range(batch_size, x.shape[0] + 1, batch_size)):
+    #     b0 = b1 - batch_size
+    #     batch_metrics = self.batch_step(
+    #         x[b0:b1], y[b0:b1], training=True)
+
+    # b is batch number
+    avg_acc = 0
+    counter = 0
+    for b1 in range(model.batch_size, shuffled_inputs.shape[0] + 1, model.batch_size):
+    #for batch in range(0, len(shuffled_inputs), model.batch_size):
+        b0 = b1 - model.batch_size
+        batch_inputs = shuffled_inputs[b0:b1]
+        batch_labels = shuffled_labels[b0:b1]
+
+        with tf.GradientTape() as tape: 
+            logits = model(batch_inputs, False)
+            loss = model.loss(logits, batch_labels)
+            model.loss_list.append(loss)
+        grads = tape.gradient(loss, model.trainable_variables)
+        model.optimizer.apply_gradients(zip(grads, model.trainable_variables))
+        acc = model.accuracy(logits, batch_labels)
+        avg_acc += acc
+        counter += 1
+
+        # print("loss:", loss)
+
+    print("acc:", avg_acc/counter)  # ??
+
+    return 
 
 
 def test(model, test_inputs, test_labels):
@@ -177,12 +237,19 @@ def test(model, test_inputs, test_labels):
     :return: test accuracy - this should be the average accuracy across
     all batches
     """
-    logits = model.call(test_inputs, False)
-    loss = model.loss(logits, test_labels)
+    avg_acc = 0
+    for b1 in range(model.batch_size, test_inputs.shape[0] + 1, model.batch_size):
+        b0 = b1 - model.batch_size
+        batch_inputs = test_inputs[b0:b1]
+        batch_labels = test_labels[b0:b1]
 
-    acc = model.accuracy(logits, test_labels)
+        logits = model(batch_inputs, True)
+        loss = model.loss(logits, batch_labels)
 
-    return {'loss': loss, 'acc': acc}
+        acc = model.accuracy(logits, batch_labels)
+        avg_acc += acc
+
+    return avg_acc/(test_inputs.shape[0]/model.batch_size)
 
 
 def visualize_loss(losses):
@@ -273,14 +340,17 @@ def main():
         "/Users/mikaylawalsh/Desktop/deep_learning/hw3-mikaylawalsh/data/train", 3, 5)
     test_inputs, test_labels = get_data(
         "/Users/mikaylawalsh/Desktop/deep_learning/hw3-mikaylawalsh/data/test", 3, 5)
-
     # 2. initialize model
     model = Model()
     # 3. train it for many epochs (10) - use for loop
-    for x in range(model.epochs):
+    for _ in range(model.epochs):
         train(model, train_inputs, train_labels)
+
     # 4. call test method
-    test(model, test_inputs, test_labels)
+    t = test(model, test_inputs, test_labels)
+    print("TEST:", t)
+
+    visualize_loss(model.loss_list)
 
     return
 

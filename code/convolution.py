@@ -16,46 +16,61 @@ def conv2d(inputs, filters, strides, padding):
     :param padding: either "SAME" or "VALID", capitalization matters
     :return: outputs, Tensor with shape [num_examples, output_height, output_width, output_channels]
     """
+    num_examples = inputs.shape[0]
+    in_height = inputs.shape[1]
+    in_width = inputs.shape[2]
+    input_in_channels = inputs.shape[3]
 
-    # how to i get these values
-    num_examples = None
-    in_height = None
-    in_width = None
-    input_in_channels = None
+    filter_height = filters.shape[0]
+    filter_width = filters.shape[1]
+    filter_in_channels = filters.shape[2]
+    filter_out_channels = filters.shape[3]
 
-    filter_height = None
-    filter_width = None
-    filter_in_channels = None
-    filter_out_channels = None
-
-    num_examples_stride = None
-    strideY = None
-    strideX = None
-    channels_stride = None
+    # should i make this [1, 1, 1, 1]
+    num_examples_stride = strides[0]
+    strideY = strides[1]
+    strideX = strides[2]
+    channels_stride = strides[3]
 
     # 1. assert inputs "in channels" is equal to filter's "in channels"
     assert(input_in_channels == filter_in_channels)
     # 2. check if padding is SAME or VALID
     # 3. if padding is SAME, calculate how much you need with (filter_size - 1)/2 and round using math.floor
     if padding == "SAME":
-        pad_height = math.floor(filter_height - 1)/2
-        pad_width = math.floor(filter_width - 1)/2
+        pad_height = math.floor((filter_height - 1)/2)
+        pad_width = math.floor((filter_width - 1)/2)
     else:
         pad_height = 0
         pad_width = 0
     # 4. use np.pad to pad input
-    padded_input = np.pad(inputs, pad_width)
+    padded_input = np.pad(
+        inputs, ((0, 0), (pad_height, pad_height), (pad_width, pad_width), (0, 0))) # is this right??
     # 5. create a NumPy array with the correct output dimensions (below)
-    output_height = (in_height + 2*pad_height - filter_height) / strideY + 1
-    output_width = (in_width + 2*pad_width - filter_width) / strideX + 1
-    output = np.ones((output_height, output_width))
+    output_height = int(
+        (in_height + 2*pad_height - filter_height) / strideY + 1)
+    output_width = int((in_width + 2*pad_width - filter_width) / strideX + 1)
+    output_dim1 = num_examples
+    output_dim4 = filter_out_channels
+    output = np.zeros((output_dim1, output_height, output_width, output_dim4)) 
+
     # 6. update each element in the output as you perform the convolution operator for each image
     # 7. stop iterating when filter does not fit over rest of padding input
     # 8. perform the convolution per input channel and sum those dot products together
-    while ...:
-        for m in range(filter_height):  # i think i use my strides here to skip by multiple
-            for n in range(filter_width):
-                output[m][n] = inputs[m][n] * filters[m][n]
+
+    # You will want to iterate the entire height and width including padding, stopping when you cannot
+    # fit a filter over the rest of the padding input. For convolution with many input channels, you will
+    # want to perform the convolution per input channel and sum those dot products together.
+
+    # i only want to alter inner two dimensions -- i need to sum something
+
+    for i in range(0, num_examples, num_examples_stride):
+        for k in range(filter_out_channels):
+            for startX in range(0, output_width, strideX):
+                for startY in range(0, output_height, strideY):
+                    # np.sum()
+                    output[i][startX][startY][k] += tf.matmul(  # i want whole height and width for filter?
+                        padded_input[i][startX:startX+filter_width][startY:startY+filter_height][j], filters[startX:startX+filter_width][startY:startY+filter_height][j][k])
+
     # 9. return a tensor
     return tf.convert_to_tensor(output, dtype=tf.float32)
     # Cleaning padding input

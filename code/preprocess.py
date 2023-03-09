@@ -49,15 +49,17 @@ def get_data(file_path, first_class, second_class):
     # TODO: Do the rest of preprocessing!
 
     # 1. limit inputs and labels to be those representing first and second classes (np.nonzero)
+    smaller = [x for x in labels if x == first_class or x == second_class]
     inputs = inputs[np.nonzero(
-        labels == first_class or labels == second_class)]
+        smaller)]
     labels = [label for label in labels if label ==
               first_class or label == second_class]
     # 2. reshape and transpose using tf.reshape(inputs, (-1, 3, 32 ,32)) and tf.transpose(inputs, perm=[0,2,3,1])
     inputs = tf.reshape(inputs, (-1, 3, 32, 32))
     inputs = tf.transpose(inputs, perm=[0, 2, 3, 1])
     # 3. re-number labels so cat is 0 and dog is 1 (np.where)
-    labels = np.where(labels == first_class, 0, 1)
+    #labels = np.where(labels == first_class, 0, 1)
+    labels = [0 if x == first_class else 1 for x in labels]
     # 4. turn labels into one hot vectors (tf.one_hot) where labels are of size (num_images, num_classes)
     labels = tf.one_hot(labels, 2)
     # 5. normalize pixel values by dividing by 255
