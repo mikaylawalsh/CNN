@@ -58,7 +58,7 @@ def conv2d(inputs, filters, strides, padding):
     
     # 4. use np.pad to pad input
     padded_input = np.pad(
-        inputs, ((pad_Ytop, pad_Ytop), (pad_Xleft, pad_Xleft), (pad_Xright, pad_Xright), (pad_Ybottom, pad_Ybottom))) # is this right??
+        inputs, ((0, 0), (pad_Ytop, pad_Ybottom), (pad_Xleft, pad_Xright), (0, 0))) # is this right??
     # 5. create a NumPy array with the correct output dimensions (below)
 
     # should i be using padded dimensions 
@@ -102,9 +102,9 @@ def same_test_0():
 
     NOTE: DO NOT EDIT
     '''
-    imgs = np.array([[2, 2, 3, 3, 3], [0, 1, 3, 0, 3], [2, 3, 0, 1, 3], [
-                    3, 3, 2, 1, 2], [3, 3, 0, 2, 3]], dtype=np.float32)
-    imgs = np.reshape(imgs, (1, 5, 5, 1))
+    imgs = np.array([[2, 2, 3, 3, 3, 1], [0, 1, 3, 0, 3, 2], [2, 3, 0, 1, 3, 3], [
+                    3, 3, 2, 1, 2, 3], [3, 3, 0, 2, 3, 2], [2, 3, 0, 1, 2, 3]], dtype=np.float32)
+    imgs = np.reshape(imgs, (1, 6, 6, 1))
     filters = tf.Variable(tf.random.truncated_normal([2, 2, 1, 1],
                                                      dtype=tf.float32,
                                                      stddev=1e-1),
