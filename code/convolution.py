@@ -37,14 +37,26 @@ def conv2d(inputs, filters, strides, padding):
     # 2. check if padding is SAME or VALID
     # 3. if padding is SAME, calculate how much you need with (filter_size - 1)/2 and round using math.floor
     if padding == "SAME":
-        pad_height = math.floor((filter_height - 1)/2)
-        pad_width = math.floor((filter_width - 1)/2)
+        if (in_height % strides[1] == 0):
+            pad_along_height = max(filter_height - strideY, 0)
+        else:
+            pad_along_height = max(filter_height - (in_height % strideY), 0)
+        if (in_width % strides[2] == 0):
+            pad_along_width = max(filter_width - strideX, 0)
+        else:
+            pad_along_width = max(filter_width - (in_width % strideX), 0)
+
+        pad_top = pad_along_height // 2
+        pad_bottom = pad_along_height - pad_top
+        pad_left = pad_along_width // 2
+        ad_right = pad_along_width - pad_left
     else:
         pad_height = 0
         pad_width = 0
+    
     # 4. use np.pad to pad input
     padded_input = np.pad(
-        inputs, ((0, 0), (pad_height, pad_height), (pad_width, pad_width), (0, 0))) # is this right??
+        inputs, ((pad_top, pad_top), (pad_height, pad_height), (pad_width, pad_width), (pad_bottom, pad_bottom))) # is this right??
     # 5. create a NumPy array with the correct output dimensions (below)
 
     # should i be using padded dimensions 
