@@ -46,25 +46,25 @@ def conv2d(inputs, filters, strides, padding):
         else:
             pad_along_width = max(filter_width - (in_width % strideX), 0)
 
-        pad_top = pad_along_height // 2
-        pad_bottom = pad_along_height - pad_top
-        pad_left = pad_along_width // 2
-        pad_right = pad_along_width - pad_left
+        pad_Ytop = pad_along_height // 2
+        pad_Ybottom = pad_along_height - pad_Ytop
+        pad_Xleft = pad_along_width // 2
+        pad_Xright = pad_along_width - pad_Xleft
     else:
-        pad_left = 0
-        pad_right = 0
-        pad_top = 0
-        pad_bottom = 0
+        pad_Xleft = 0
+        pad_Xright = 0
+        pad_Ytop = 0
+        pad_Ybottom = 0
     
     # 4. use np.pad to pad input
     padded_input = np.pad(
-        inputs, ((pad_top, pad_top), (pad_left, pad_left), (pad_right, pad_right), (pad_bottom, pad_bottom))) # is this right??
+        inputs, ((pad_Ytop, pad_Ytop), (pad_Xleft, pad_Xleft), (pad_Xright, pad_Xright), (pad_Ybottom, pad_Ybottom))) # is this right??
     # 5. create a NumPy array with the correct output dimensions (below)
 
     # should i be using padded dimensions 
     output_height = int(
-        (in_height + 2*pad_left - filter_height) / strideY + 1)
-    output_width = int((in_width + 2*pad_right - filter_width) / strideX + 1)
+        (in_height + 2*pad_Ytop - filter_height) / strideY + 1)
+    output_width = int((in_width + 2*pad_Xleft - filter_width) / strideX + 1)
     output_dim1 = num_examples
     output_dim4 = filter_out_channels
     output = np.zeros((output_dim1, output_height, output_width, output_dim4)) 
@@ -83,8 +83,6 @@ def conv2d(inputs, filters, strides, padding):
                 for y in range(0, output_height, strideY):
                     in_chunk = padded_input[i, x:x+filter_width, y:y+filter_height]
                     filt_chunk = filters[:, :, :, j]
-                    print("i", in_chunk.shape)
-                    print("f", filt_chunk.shape)
                     output[i][x][y][j] = np.sum(np.multiply(in_chunk, filt_chunk))
     # 9. return a tensor
     return tf.convert_to_tensor(output, dtype=tf.float32)
