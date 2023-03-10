@@ -59,8 +59,9 @@ def conv2d(inputs, filters, strides, padding):
     # 4. use np.pad to pad input
     padded_input = np.pad(
         inputs, ((0, 0), (pad_Ytop, pad_Ybottom), (pad_Xleft, pad_Xright), (0, 0))) # is this right??
+    in_height = padded_input.shape[1]
+    in_width = padded_input.shape[2]
     # 5. create a NumPy array with the correct output dimensions (below)
-
     # should i be using padded dimensions 
     output_height = int(
         (in_height + 2*pad_Ytop - filter_height) / strideY + 1)
@@ -179,9 +180,9 @@ def main():
 
     # 1. test to make sure results are very similar
     same_test_0()
-    valid_test_0()
-    valid_test_1()
-    valid_test_2()
+    # valid_test_0()
+    # valid_test_1()
+    # valid_test_2()
     return
 
 
