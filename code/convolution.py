@@ -46,13 +46,14 @@ def conv2d(inputs, filters, strides, padding):
     padded_input = np.pad(
         inputs, ((0, 0), (pad_height, pad_height), (pad_width, pad_width), (0, 0))) # is this right??
     # 5. create a NumPy array with the correct output dimensions (below)
+
+    # should i be using padded dimensions 
     output_height = int(
         (in_height + 2*pad_height - filter_height) / strideY + 1)
     output_width = int((in_width + 2*pad_width - filter_width) / strideX + 1)
     output_dim1 = num_examples
     output_dim4 = filter_out_channels
     output = np.zeros((output_dim1, output_height, output_width, output_dim4)) 
-
     # 6. update each element in the output as you perform the convolution operator for each image
     # 7. stop iterating when filter does not fit over rest of padding input
     # 8. perform the convolution per input channel and sum those dot products together
@@ -62,15 +63,15 @@ def conv2d(inputs, filters, strides, padding):
     # want to perform the convolution per input channel and sum those dot products together.
 
     # i only want to alter inner two dimensions -- i need to sum something
-
     for i in range(0, num_examples, num_examples_stride):
-        for k in range(filter_out_channels):
-            for startX in range(0, output_width, strideX):
-                for startY in range(0, output_height, strideY):
-                    # np.sum()
-                    output[i][startX][startY][k] += tf.matmul(  # i want whole height and width for filter?
-                        padded_input[i][startX:startX+filter_width][startY:startY+filter_height][j], filters[startX:startX+filter_width][startY:startY+filter_height][j][k])
-
+        for j in range(filter_out_channels):
+            for x in range(0, output_width, strideX):
+                for y in range(0, output_height, strideY):
+                    in_chunk = padded_input[i, x:x+filter_width, y:y+filter_height]
+                    filt_chunk = filters[:, :, :, j]
+                    print("i", in_chunk.shape)
+                    print("f", filt_chunk.shape)
+                    output[i][x][y][j] = np.sum(np.multiply(in_chunk, filt_chunk))
     # 9. return a tensor
     return tf.convert_to_tensor(output, dtype=tf.float32)
     # Cleaning padding input
@@ -136,6 +137,7 @@ def valid_test_1():
                                                      dtype=tf.float32,
                                                      stddev=1e-1),
                           name="filters")
+    print(filters)
     my_conv = conv2d(imgs, filters, strides=[1, 1, 1, 1], padding="VALID")
     tf_conv = tf.nn.conv2d(imgs, filters, [1, 1, 1, 1], padding="VALID")
     print("VALID_TEST_1:", "my conv2d:",

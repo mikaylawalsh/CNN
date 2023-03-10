@@ -99,10 +99,10 @@ class Model(tf.keras.Model):
             bias_add2, mean2, variance2, None, None, 1e-5)
         relu2 = tf.nn.relu(batch_norm2)
         max_pool2 = tf.nn.max_pool(relu2, [2, 2], [2, 2], self.padding)
-        # if is_testing:
-        #     conv3 = conv2d(max_pool2, self.filters3, self.stride, self.padding) 
-        # else:
-        conv3 = tf.nn.conv2d(max_pool2, self.filters3, self.stride, self.padding)
+        if is_testing:
+            conv3 = conv2d(max_pool2, self.filters3, self.stride, self.padding) 
+        else:
+            conv3 = tf.nn.conv2d(max_pool2, self.filters3, self.stride, self.padding)
         bias_add3 = tf.nn.bias_add(conv3, self.biases_conv3)
         mean3, variance3 = tf.nn.moments(bias_add3, [0, 1, 2])
         batch_norm3 = tf.nn.batch_normalization(
