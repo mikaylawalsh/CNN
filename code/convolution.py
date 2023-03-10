@@ -51,8 +51,10 @@ def conv2d(inputs, filters, strides, padding):
         pad_left = pad_along_width // 2
         pad_right = pad_along_width - pad_left
     else:
-        pad_height = 0
-        pad_width = 0
+        pad_left = 0
+        pad_right = 0
+        pad_top = 0
+        pad_bottom = 0
     
     # 4. use np.pad to pad input
     padded_input = np.pad(
@@ -61,8 +63,8 @@ def conv2d(inputs, filters, strides, padding):
 
     # should i be using padded dimensions 
     output_height = int(
-        (in_height + 2*pad_height - filter_height) / strideY + 1)
-    output_width = int((in_width + 2*pad_width - filter_width) / strideX + 1)
+        (in_height + 2*pad_left - filter_height) / strideY + 1)
+    output_width = int((in_width + 2*pad_right - filter_width) / strideX + 1)
     output_dim1 = num_examples
     output_dim4 = filter_out_channels
     output = np.zeros((output_dim1, output_height, output_width, output_dim4)) 
